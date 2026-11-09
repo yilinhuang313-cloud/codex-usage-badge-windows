@@ -1,0 +1,8 @@
+*.log
+config.json
+worker.json
+update-state.json
+update-preferences.json
+stop.request
+node_modules/
+.DS_Store
