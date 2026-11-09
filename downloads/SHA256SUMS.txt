@@ -1,1 +1,1 @@
-18ac336c2813da2d4ad3758d7ca7475768e0f10be74d630cf2f91b9eb44f5c18  CodexUsageBadge-Windows-Launcher-1.1.0.zip
+dfea358aa0f6d37929f149fe93b17abe15bd00c7e6518bf8635e2be6eefb5a08  CodexUsageBadge-Windows-Launcher-1.1.0.zip

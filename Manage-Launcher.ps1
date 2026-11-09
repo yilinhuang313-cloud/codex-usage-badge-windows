@@ -26,7 +26,8 @@ function Set-BadgeShortcuts([string]$Root, [string[]]$Directories, [string]$Laun
     $shell = New-Object -ComObject WScript.Shell
     $powershell = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
     $paths = @($Directories | Select-Object -Unique | ForEach-Object { Join-Path $_ 'Codex (Usage Badge).lnk' })
-    foreach($directory in $Directories){$legacy=Join-Path $directory (Get-LegacyLauncherName);if(Test-Path -LiteralPath $legacy){$old=$shell.CreateShortcut($legacy);if($old.TargetPath -eq $powershell -and $old.Arguments -in @((Get-LauncherArguments $upstreamManager),(Get-LauncherArguments $manager))){$paths+= $legacy}}}
+    foreach($directory in $Directories){foreach($file in @(Get-ChildItem -LiteralPath $directory -File -Filter '*.lnk' -ErrorAction SilentlyContinue)){$old=$shell.CreateShortcut($file.FullName);if($old.TargetPath -eq $powershell -and $old.Arguments -in @((Get-LauncherArguments $upstreamManager),(Get-LauncherArguments $manager))){$paths+=$file.FullName}}}
+    $paths=@($paths|Select-Object -Unique)
     # Check every destination before changing any shortcut.
     foreach ($linkPath in $paths) {
         if (Test-Path -LiteralPath $linkPath) {
@@ -53,7 +54,7 @@ function Remove-BadgeShortcuts([string]$Root, [string[]]$Directories, [string]$L
     $addonExpected = if($Launcher){Get-LauncherArguments $Launcher}else{$expected}
     $powershell = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
     foreach ($directory in @($Directories | Select-Object -Unique)) {
-      foreach($name in @('Codex (Usage Badge).lnk',(Get-LegacyLauncherName))){
+      foreach($name in @('Codex (Usage Badge).lnk',(Get-LegacyLauncherName))+@(Get-ChildItem -LiteralPath $directory -File -Filter '*.lnk' -ErrorAction SilentlyContinue|Select-Object -ExpandProperty Name)|Select-Object -Unique){
         $linkPath = Join-Path $directory $name
         if (Test-Path -LiteralPath $linkPath) {
             $link = $shell.CreateShortcut($linkPath)

@@ -44,11 +44,11 @@
 
 - [x] Add `Manage-ReplyUsage.ps1` supervisor (Start/Run/Stop/Launch), install into a sibling directory, and update launcher/owned startup links without replacing vendor source.
 - [x] Verify shortcut ownership, repeat installs, parse checks, all test suites, then backup and install addon locally. Keep the current app running while replacing only the addon.
-- [ ] Build v1.1.0 ZIP and checksum, update Chinese README and publish source plus ZIP to the already authorized public repository.
-- [ ] Verify remote artifact hashes, installed source hashes, running addon and displayed badges; record any unverified restart scenario.
+- [x] Build v1.1.0 ZIP and checksum, update Chinese README and publish source plus ZIP to the already authorized public repository.
+- [x] Verify remote artifact hashes, installed source hashes, running addon and displayed badges; record any unverified restart scenario.
 
 ## Execution ruling
 
 The current workspace contains a packaged source tree rather than a Git checkout. Reuse it and publish through the connected GitHub API. The user's instruction to proceed with the approved design is treated as authorization for implementation, local installation and the already specified GitHub update; no second design gate is introduced.
 
-Stable DOM turn IDs proved available, so no final-answer fingerprint or SQLite access is needed; raw answer text is never retained by the parser. Independent review identified synthetic context counters, missing turn-boundary attribution and an uninstall ownership check; all were fixed with regression tests. Final verification: 15 Node checks, 10 isolated live DOM checks, 8 legacy shortcut checks, 11 addon installation checks. Local source hashes match the package, and two windows are connected. A full application/Windows restart was not forced during the active chat.
+Stable DOM turn IDs proved available, so no final-answer fingerprint or SQLite access is needed; raw answer text is never retained by the parser. Independent review identified synthetic context counters, missing turn-boundary attribution and an uninstall ownership check; all were fixed with regression tests. Final verification: 15 Node checks, 10 isolated live DOM checks, 8 legacy shortcut checks, 13 addon installation checks (including user-renamed launchers). Local source hashes match the package, and two windows are connected. A full application/Windows restart was not forced during the active chat.

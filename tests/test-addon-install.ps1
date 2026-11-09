@@ -15,10 +15,14 @@ try{
  Set-BadgeShortcuts $upstream @($desktop) $supervisor
  $link=$shortcutShell.CreateShortcut((Join-Path $desktop 'Codex (Usage Badge).lnk'))
  Assert ($link.Arguments -eq (Get-LauncherArguments $supervisor)) 'Launch entry starts independent addon supervisor'
+ $renamedPath=Join-Path $desktop 'Codex.lnk';$renamed=$shortcutShell.CreateShortcut($renamedPath);$renamed.TargetPath=Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe';$renamed.Arguments=Get-LauncherArguments (Join-Path $upstream 'manage-windows.ps1');$renamed.Save()
+ Set-BadgeShortcuts $upstream @($desktop) $supervisor
+ Assert ($shortcutShell.CreateShortcut($renamedPath).Arguments -eq (Get-LauncherArguments $supervisor)) 'User-renamed owned launcher is upgraded'
  Install-ReplyAddon $upstream $addon $startup -NoStart
  Assert (@(Get-ChildItem (Join-Path $addon 'backups') -Recurse -Filter 'agent.cjs').Count -ge 1) 'Repeat install retains previous sources as backup'
  Remove-BadgeShortcuts $upstream @($desktop) $supervisor
  Assert (!(Test-Path (Join-Path $desktop 'Codex (Usage Badge).lnk'))) 'Owned addon launcher removed'
+ Assert (!(Test-Path -LiteralPath $renamedPath)) 'User-renamed owned launcher is removed on uninstall'
  Remove-ReplyStartup $addon $startup
  Assert (!(Test-Path (Join-Path $startup 'Codex Reply Usage Background.lnk'))) 'Owned background shortcut removed'
  $foreign=Join-Path $fixture 'foreign';New-Item -ItemType Directory $foreign|Out-Null
@@ -44,7 +48,7 @@ try{
  }finally{$env:LOCALAPPDATA=$savedLocal;$ErrorActionPreference=$savedErrorAction}
  Assert (!(Test-Path -LiteralPath $sentinel)) 'Foreign addon script is never invoked during uninstall'
  Assert ($uninstallExit -ne 0) 'Uninstall rejects unowned addon directory'
- Write-Host 'All 11 addon installation checks passed.'
+ Write-Host 'All 13 addon installation checks passed.'
 }finally{
  $resolved=[IO.Path]::GetFullPath($fixture);$temp=[IO.Path]::GetFullPath([IO.Path]::GetTempPath()).TrimEnd('\')+'\'
  if(!$resolved.StartsWith($temp,[StringComparison]::OrdinalIgnoreCase) -or (Split-Path $resolved -Leaf) -notlike 'reply-addon-install-test-*'){throw 'Unsafe fixture cleanup'}
