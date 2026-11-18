@@ -1,4 +1,4 @@
-# Codex Usage Badge Windows Launcher v1.1.0
+# Codex Usage Badge Windows Launcher v1.1.1
 
 为 Codex Usage Badge 提供带连接参数的固定启动入口，避免普通图标启动后自动加载被键鼠操作打断。
 
@@ -6,9 +6,17 @@
 
 ## 下载
 
-[下载 Windows 安装包 v1.1.0](https://github.com/yilinhuang313-cloud/codex-usage-badge-windows/raw/refs/heads/main/downloads/CodexUsageBadge-Windows-Launcher-1.1.0.zip) · [SHA-256 校验文件](https://github.com/yilinhuang313-cloud/codex-usage-badge-windows/blob/main/downloads/SHA256SUMS.txt)
+[下载 Windows 安装包 v1.1.1](https://github.com/yilinhuang313-cloud/codex-usage-badge-windows/raw/refs/heads/main/downloads/CodexUsageBadge-Windows-Launcher-1.1.1.zip) · [SHA-256 校验文件](https://github.com/yilinhuang313-cloud/codex-usage-badge-windows/blob/main/downloads/SHA256SUMS.txt)
 
 ## 安装和使用
+
+### v1.1.1 修复
+
+- 将上游 v0.10.1 的额度读取等待时间从 10 秒延长到 45 秒，减少网络较慢时反复超时、额度显示为“—”的问题；网络持续不可用时仍会显示暂无数据。
+- 主扩展文件缺失时明确提示重新安装；上游已有具体报错时，避免再弹出笼统的“完全退出 Codex”提示。
+- 安装时把客户端图标复制到扩展的固定目录，并修复仍指向旧版 Store 路径的 ChatGPT 快捷方式，恢复任务栏图标。
+
+额度等待时间修复会在扩展启动或快捷方式启动时检查并应用，修改前保留备份。只识别已知的上游代码片段，不修改不匹配的版本。安装包内的 `vendor/` 仍保留原版文件，修复应用在用户本机的安装副本。
 
 1. 在 Windows 10/11 中安装并登录 Codex 桌面客户端，至少启动过一次。
 2. 下载并**完整解压**本安装包，双击根目录 `Install.cmd`。
@@ -38,8 +46,9 @@
 - `Status.cmd`：查看后台和连接状态。
 - 根目录 `Uninstall.cmd`：停止两个后台，卸载上游后台，并移除本包创建且仍指向本安装的快捷方式；保留源码、配置和备份以便恢复，不删除会话记录。残留模块不会继续随登录启动。
 - 上游 v0.10.1 默认每 6 小时检查原项目的 Windows 发布，升级其后台。此自动更新来源仍是原项目，不是本仓库。
-- v1.1.0 的逐轮模块独立安装到 `%LOCALAPPDATA%\CodexUsageBadgeLauncher`，其专用登录启动项和启动入口不在上游替换目录中。快捷方式先启动本模块，再委托上游固定路径的管理器启动 Codex，原项目自动更新不会覆盖它。
+- v1.1.1 的逐轮模块独立安装到 `%LOCALAPPDATA%\CodexUsageBadgeLauncher`，其专用登录启动项和启动入口不在上游替换目录中。快捷方式先启动本模块，再委托上游固定路径的管理器启动 Codex，原项目自动更新不会覆盖它。
 - 重新运行新版 `Install.cmd` 会安装更新并备份旧版逐轮模块；本机已有的“Codex（带用量条）”或用户改名后的入口也会更新，但只修改仍指向本项目启动脚本的快捷方式。
+- 建议通过 **Codex (Usage Badge)** 启动。普通官方入口在重启后仍可能无法加载扩展；v1.1.1 不改变这一启动限制。
 - 运行环境需要 Node.js 24+（支持 `node:sqlite`）和 Codex CLI；优先使用桌面客户端已下载的运行时。
 - 某些 Codex 或 Microsoft Store 更新可能改变兼容性；遇到问题请重新安装本整合包并查看上游文档。
 

@@ -24,7 +24,7 @@ function detailLines(turn){
  return lines;
 }
 function installReplyUsage(window=globalThis){
- const document=window.document,KEY='__codexReplyUsage',VERSION='1.1.0';
+ const document=window.document,KEY='__codexReplyUsage',VERSION='1.1.1';
  if(window[KEY]?.version===VERSION){window[KEY].refresh();return;}
  window[KEY]?.dispose?.();
  const UUID=/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i;

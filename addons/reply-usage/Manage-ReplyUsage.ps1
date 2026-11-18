@@ -24,13 +24,29 @@ function Start-ReplySupervisor {
     $arguments='-NoLogo -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File "'+(Join-Path $addonRoot 'Manage-ReplyUsage.ps1')+'" -Action Run'
     Start-Process -FilePath $shell -ArgumentList $arguments -WindowStyle Hidden | Out-Null
 }
+function Repair-QuotaTimeout([string]$UpstreamRoot) {
+    $marker=Join-Path $UpstreamRoot '.codex-usage-badge-owner'
+    $agent=Join-Path $UpstreamRoot 'agent.cjs'
+    if(!(Test-Path -LiteralPath $marker) -or !(Test-Path -LiteralPath $agent)){return}
+    if((Get-Content -LiteralPath $marker -Raw).Trim() -ne 'local.codexusagebadge.windows'){return}
+    $text=[IO.File]::ReadAllText($agent)
+    $old="args=['app-server'], requestTimeoutMs=10000"
+    if(!$text.Contains($old)){return}
+    $backup=Join-Path $addonRoot ('backups\quota-timeout-'+[DateTime]::UtcNow.ToString('yyyyMMdd-HHmmss-ffff')+'.cjs')
+    New-Item -ItemType Directory -Path (Split-Path $backup -Parent) -Force | Out-Null
+    $temp=$agent+'.timeout-'+[guid]::NewGuid().ToString('N')
+    try {
+        [IO.File]::WriteAllText($temp,$text.Replace($old,"args=['app-server'], requestTimeoutMs=45000"),(New-Object Text.UTF8Encoding($false)))
+        [IO.File]::Replace($temp,$agent,$backup)
+    } finally {if(Test-Path -LiteralPath $temp){Remove-Item -LiteralPath $temp}}
+}
 if($Action -eq 'Functions'){return}
 try {
     if(!(Test-Path -LiteralPath $ownerFile) -or (Get-Content -LiteralPath $ownerFile -Raw).Trim() -ne 'local.codexusagebadge.replyaddon'){throw 'Reply addon ownership marker is missing.'}
     $addonConfig=Get-Content -LiteralPath (Join-Path $addonRoot 'addon-config.json') -Raw | ConvertFrom-Json
     $upstreamConfig=Join-Path $addonConfig.UpstreamRoot 'config.json'
     switch($Action){
-        'Start' { Start-ReplySupervisor }
+        'Start' { Repair-QuotaTimeout $addonConfig.UpstreamRoot; Start-ReplySupervisor }
         'Stop' {
             [IO.File]::WriteAllText($stopFile,'stop')
             $deadline=[DateTime]::UtcNow.AddSeconds(30)
@@ -46,6 +62,7 @@ try {
                 while(!(Test-Path -LiteralPath $stopFile)){
                     try {
                         $config=Get-Content -LiteralPath $upstreamConfig -Raw | ConvertFrom-Json
+                        Repair-QuotaTimeout $addonConfig.UpstreamRoot
                         if(!(Test-Path -LiteralPath $config.NodeExe)){throw 'Runtime unavailable'}
                         $arguments='"'+(Join-Path $addonRoot 'agent.cjs')+'" --root "'+$addonRoot+'" --config "'+$upstreamConfig+'"'
                         $child=Start-Process -FilePath $config.NodeExe -ArgumentList $arguments -WindowStyle Hidden -PassThru -RedirectStandardError (Join-Path $addonRoot 'reply-usage-error.log')
@@ -56,14 +73,19 @@ try {
             } finally { if($owned){$mutex.ReleaseMutex()};$mutex.Dispose() }
         }
         'Launch' {
-            Start-ReplySupervisor
+            Repair-QuotaTimeout $addonConfig.UpstreamRoot
             $manager=Join-Path $addonConfig.UpstreamRoot 'manage-windows.ps1'
+            if(!(Test-Path -LiteralPath $manager -PathType Leaf) -or !(Test-Path -LiteralPath $upstreamConfig -PathType Leaf)){
+                throw 'Main Usage Badge installation is missing. Run Install.cmd to restore it.'
+            }
+            Start-ReplySupervisor
             $shell=Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
             & $shell -NoLogo -NoProfile -ExecutionPolicy Bypass -File $manager -Action Launch
-            if($LASTEXITCODE -ne 0){throw 'Fully quit Codex, then open Codex (Usage Badge) again.'}
+            # The upstream manager displays its specific error. Do not replace it with a second, generic dialog.
+            if($LASTEXITCODE -ne 0){exit $LASTEXITCODE}
         }
         'Status' {
-            [pscustomobject]@{SupervisorRunning=(Test-ReplyRunning);Version='1.1.0'} | Format-List
+            [pscustomobject]@{SupervisorRunning=(Test-ReplyRunning);Version='1.1.1'} | Format-List
             $state=Join-Path $addonRoot 'reply-usage-state.json';if(Test-Path -LiteralPath $state){Get-Content -LiteralPath $state -Raw}
         }
     }

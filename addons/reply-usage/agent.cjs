@@ -62,7 +62,7 @@ async function main(args=process.argv.slice(2)){
  async function tick(){
   if(stopped)return;
   if(fs.existsSync(stopFile)){await shutdown();return;}
-  let state={version:'1.1.0',pid:process.pid,state:'waiting',checkedAt:Date.now(),windows:0,badges:0,ready:0};
+  let state={version:'1.1.1',pid:process.pid,state:'waiting',checkedAt:Date.now(),windows:0,badges:0,ready:0};
   try{
    await scan();const requests=[];
    for(const session of sessions.values()){
@@ -85,7 +85,7 @@ async function main(args=process.argv.slice(2)){
  async function shutdown(){
   if(stopped)return;stopped=true;clearTimeout(timer);
   for(const session of sessions.values()){try{await session.evaluate('window.__codexReplyUsage?.dispose()');}catch{}session.close();}sessions.clear();
-  writeState(root,{version:'1.1.0',pid:process.pid,state:'stopped',checkedAt:Date.now()});
+  writeState(root,{version:'1.1.1',pid:process.pid,state:'stopped',checkedAt:Date.now()});
  }
  process.once('SIGINT',()=>shutdown());process.once('SIGTERM',()=>shutdown());await tick();
 }

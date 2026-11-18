@@ -24,6 +24,8 @@ function Set-BadgeShortcuts([string]$Root, [string[]]$Directories, [string]$Laun
         throw 'Codex Usage Badge or Codex executable is missing.'
     }
     $shell = New-Object -ComObject WScript.Shell
+    $icon = $config.AppExe + ',0'
+    if($Launcher){$cachedIcon=Join-Path (Split-Path $Launcher -Parent) 'codex.ico';if(Test-Path -LiteralPath $cachedIcon){$icon=$cachedIcon+',0'}}
     $powershell = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
     $paths = @($Directories | Select-Object -Unique | ForEach-Object { Join-Path $_ 'Codex (Usage Badge).lnk' })
     foreach($directory in $Directories){foreach($file in @(Get-ChildItem -LiteralPath $directory -File -Filter '*.lnk' -ErrorAction SilentlyContinue)){$old=$shell.CreateShortcut($file.FullName);if($old.TargetPath -eq $powershell -and $old.Arguments -in @((Get-LauncherArguments $upstreamManager),(Get-LauncherArguments $manager))){$paths+=$file.FullName}}}
@@ -42,10 +44,21 @@ function Set-BadgeShortcuts([string]$Root, [string[]]$Directories, [string]$Laun
         $link.TargetPath = $powershell
         $link.Arguments = Get-LauncherArguments $manager
         $link.WorkingDirectory = $Root
-        $link.IconLocation = $config.AppExe + ',0'
+        $link.IconLocation = $icon
         $link.Description = 'Start Codex with Usage Badge enabled.'
         $link.WindowStyle = 7
         $link.Save()
+    }
+    # Windows can use an old application shortcut with the same AppUserModelID
+    # to resolve the running taskbar icon after a Store update.
+    foreach($directory in $Directories){
+        foreach($file in @(Get-ChildItem -LiteralPath $directory -Filter '*.lnk' -File -ErrorAction SilentlyContinue)){
+            $link=$shell.CreateShortcut($file.FullName)
+            if($link.TargetPath -notmatch '(?i)\\WindowsApps\\OpenAI\.Codex_[^\\]+\\app\\ChatGPT\.exe$'){continue}
+            if($link.TargetPath -eq $config.AppExe -and $link.IconLocation -eq $icon){continue}
+            if($Launcher){$backup=Join-Path (Split-Path $Launcher -Parent) ('backups\icons-'+[guid]::NewGuid().ToString('N'));New-Item -ItemType Directory -Path $backup -Force|Out-Null;Copy-Item -LiteralPath $file.FullName -Destination (Join-Path $backup $file.Name)}
+            $link.TargetPath=$config.AppExe;$link.WorkingDirectory=Split-Path $config.AppExe -Parent;$link.IconLocation=$icon;$link.Save()
+        }
     }
 }
 function Remove-BadgeShortcuts([string]$Root, [string[]]$Directories, [string]$Launcher='') {
@@ -94,6 +107,12 @@ function Install-ReplyAddon([string]$Root,[string]$AddonRoot,[string]$StartupDir
     }
     [IO.File]::WriteAllText($marker,$owner,(New-Object Text.UTF8Encoding($false)))
     [IO.File]::WriteAllText((Join-Path $AddonRoot 'addon-config.json'),(@{UpstreamRoot=$Root}|ConvertTo-Json),(New-Object Text.UTF8Encoding($false)))
+    $config=Get-Content -LiteralPath (Join-Path $Root 'config.json') -Raw|ConvertFrom-Json
+    $resources=Join-Path (Split-Path $config.AppExe -Parent) 'resources'
+    foreach($name in @('icon-chatgpt.ico','chatgpt-app-light.ico')){
+        $iconSource=Join-Path $resources $name
+        if(Test-Path -LiteralPath $iconSource){Copy-Item -LiteralPath $iconSource -Destination (Join-Path $AddonRoot 'codex.ico') -Force;break}
+    }
     $link=$shortcutShell.CreateShortcut($startupLink);$link.TargetPath=$shell;$link.Arguments=$runArguments;$link.WorkingDirectory=$AddonRoot;$link.WindowStyle=7;$link.Save()
     if(!$NoStart){& $shell -NoProfile -ExecutionPolicy Bypass -File $supervisor -Action Start;if($LASTEXITCODE -ne 0){throw 'Reply addon could not start.'}}
 }
